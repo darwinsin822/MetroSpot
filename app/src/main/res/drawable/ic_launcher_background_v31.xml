@@ -1,0 +1,4 @@
+<!-- Dopamusic: fondo fijo negro también en API31+, en vez de los colores de acento del sistema -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#FF000000" />
+</shape>
