@@ -39,12 +39,8 @@
 
 <h1><a id="screenshots"></a>Screenshots</h1>
 
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_1.png" alt="Home screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_2.png" alt="Artist screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_3.png" alt="Recognize music screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_4.png" alt="Listen together screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_5.png" alt="Player screen" width="30%" />
-<img src="fastlane/metadata/android/en-US/images/screenshots/screenshot_6.png" alt="Player lyrics screen" width="30%" />
+<img src="assets/screenshots/metrospot_home.jpg" alt="MetroSpot Home" width="36%" style="border-radius: 12px; margin: 6px;" />
+<img src="assets/screenshots/metrospot_playlist.jpg" alt="MetroSpot Playlist" width="36%" style="border-radius: 12px; margin: 6px;" />
 
 </div>
 
