@@ -540,21 +540,37 @@ fun LibraryPlaylistsScreen(
             }
         }
 
-        // Always visible + button (no scroll hiding)
-        FloatingActionButton(
-            onClick = { showCreatePlaylistDialog = true },
+        // Actions column: Spotify Import + Create Playlist
+        androidx.compose.foundation.layout.Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .windowInsetsPadding(
                     LocalPlayerAwareWindowInsets.current
                         .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
                 )
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.End,
         ) {
-            Icon(
-                painter = painterResource(R.drawable.add),
-                contentDescription = stringResource(R.string.create_playlist),
-            )
+            FloatingActionButton(
+                onClick = { navController.navigate("spotify_migrate") },
+                containerColor = androidx.compose.ui.graphics.Color(0xFF1DB954),
+                contentColor = androidx.compose.ui.graphics.Color.Black,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.sync),
+                    contentDescription = "Migrar desde Spotify",
+                )
+            }
+
+            FloatingActionButton(
+                onClick = { showCreatePlaylistDialog = true },
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.add),
+                    contentDescription = stringResource(R.string.create_playlist),
+                )
+            }
         }
     }
 }
