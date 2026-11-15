@@ -21,7 +21,18 @@
 
 <br/>
 
-[**📥 Descargar APK (Releases)**](https://github.com/darwinsin822/MetroSpot/releases) · [**Features**](#features) · [**Translate**](#translations) · [**FAQ**](#faq) · [**Support**](#support-the-project)
+[![Descargar APK](https://img.shields.io/badge/Descargar%20APK%20(v13.7.0)-Android%208.0+-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/darwinsin822/MetroSpot/releases/latest/download/MetroSpot-v13.7.0-Rebrand-Final-release.apk)
+[![Descargar FOSS APK](https://img.shields.io/badge/Descargar%20FOSS%20APK-Open%20Source-blue?style=for-the-badge&logo=android&logoColor=white)](https://github.com/darwinsin822/MetroSpot/releases/latest/download/MetroSpot-v13.7.0-foss-release.apk)
+
+<br/>
+
+> 📲 **¿Quieres instalar MetroSpot en tu celular Android?**  
+> 👉 **[Descarga Directa del APK v13.7.0 (13.9 MB)](https://github.com/darwinsin822/MetroSpot/releases/latest/download/MetroSpot-v13.7.0-Rebrand-Final-release.apk)**  
+> 👉 **[Descarga Directa versión FOSS (14.0 MB)](https://github.com/darwinsin822/MetroSpot/releases/latest/download/MetroSpot-v13.7.0-foss-release.apk)**
+
+<br/>
+
+[**📥 Ver Todos los Releases**](https://github.com/darwinsin822/MetroSpot/releases) · [**Features**](#features) · [**Translate**](#translations) · [**FAQ**](#faq) · [**Support**](#support-the-project)
 
 </div>
 
