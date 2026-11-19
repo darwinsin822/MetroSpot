@@ -47,6 +47,16 @@
     <string name="local_rescan">Volver a escanear</string>
     <string name="local_play_all">Reproducir todo</string>
     <string name="local_shuffle_all">Aleatorio</string>
+    <string name="local_shuffle">Aleatorio</string>
+    <string name="local_sort">Ordenar</string>
+    <string name="local_sort_title_asc">Título (A–Z)</string>
+    <string name="local_sort_title_desc">Título (Z–A)</string>
+    <string name="local_sort_artist">Artista</string>
+    <string name="local_sort_duration">Duración</string>
+    <string name="local_sort_date_added">Añadido recientemente</string>
+    <string name="local_track_count">%1$d pistas</string>
+    <string name="local_artist_meta">%1$d pistas • %2$d álbumes</string>
+    <string name="local_album_meta">%1$s • %2$d pistas</string>
     <string name="filter_videos">Vídeos</string>
     <string name="filter_albums">Álbumes</string>
     <string name="filter_artists">Artistas</string>

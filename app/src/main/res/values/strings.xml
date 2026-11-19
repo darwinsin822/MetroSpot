@@ -64,6 +64,16 @@
     <string name="local_rescan">Rescan Storage</string>
     <string name="local_play_all">Play All</string>
     <string name="local_shuffle_all">Shuffle</string>
+    <string name="local_shuffle">Shuffle</string>
+    <string name="local_sort">Sort</string>
+    <string name="local_sort_title_asc">Title (A–Z)</string>
+    <string name="local_sort_title_desc">Title (Z–A)</string>
+    <string name="local_sort_artist">Artist</string>
+    <string name="local_sort_duration">Duration</string>
+    <string name="local_sort_date_added">Recently Added</string>
+    <string name="local_track_count">%1$d tracks</string>
+    <string name="local_artist_meta">%1$d tracks • %2$d albums</string>
+    <string name="local_album_meta">%1$s • %2$d tracks</string>
     <string name="filter_videos">Videos</string>
     <string name="filter_albums">Albums</string>
     <string name="filter_artists">Artists</string>
