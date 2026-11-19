@@ -80,6 +80,7 @@ import androidx.media3.exoplayer.audio.SilenceSkippingAudioProcessor
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
+import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.mkv.MatroskaExtractor
 import androidx.media3.extractor.mp4.FragmentedMp4Extractor
@@ -3788,7 +3789,18 @@ class MusicService :
         playerProvider: () -> ExoPlayer?,
     ): DataSource.Factory {
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
-            val mediaId = dataSpec.key ?: error("No media id")
+            val mediaId = dataSpec.key ?: dataSpec.uri.toString()
+            val isLocalMedia = dataSpec.uri.scheme == "content" ||
+                dataSpec.uri.scheme == "file" ||
+                mediaId.startsWith("content://") ||
+                mediaId.startsWith("file://") ||
+                mediaId.startsWith("local:") ||
+                mediaId.startsWith("local_")
+            if (isLocalMedia) {
+                val targetUri = if (dataSpec.uri.scheme != null) dataSpec.uri else android.net.Uri.parse(mediaId)
+                return@Factory dataSpec.buildUpon().setUri(targetUri).build()
+            }
+
             val storedFormat = runBlocking(Dispatchers.IO) { database.format(mediaId).first() }
             applyAudioNormalizationBeforePlayback(
                 processor = normalizationProcessor,
@@ -3968,9 +3980,7 @@ class MusicService :
     ) =
         DefaultMediaSourceFactory(
             createDataSourceFactory(normalizationProcessor, playerProvider),
-            ExtractorsFactory {
-                arrayOf(MatroskaExtractor(), FragmentedMp4Extractor(), Mp4Extractor())
-            },
+            DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true),
         )
 
     private fun createRenderersFactory(

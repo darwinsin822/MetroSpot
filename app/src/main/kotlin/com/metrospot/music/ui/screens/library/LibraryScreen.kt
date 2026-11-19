@@ -20,6 +20,7 @@ import com.metrospot.music.constants.ChipSortTypeKey
 import com.metrospot.music.constants.LibraryFilter
 import com.metrospot.music.constants.LibraryViewType
 import com.metrospot.music.constants.PlaylistViewTypeKey
+import com.metrospot.music.local.ui.LocalMusicScreen
 import com.metrospot.music.ui.component.ChipsRow
 import com.metrospot.music.utils.rememberEnumPreference
 
@@ -38,6 +39,7 @@ fun LibraryScreen() {
                     LibraryFilter.SONGS to stringResource(R.string.filter_songs),
                     LibraryFilter.ALBUMS to stringResource(R.string.filter_albums),
                     LibraryFilter.ARTISTS to stringResource(R.string.filter_artists),
+                    LibraryFilter.LOCAL to stringResource(R.string.filter_local),
                     LibraryFilter.PODCASTS to stringResource(R.string.filter_podcasts),
                 ),
                 currentValue = filterType,
@@ -74,6 +76,10 @@ fun LibraryScreen() {
             LibraryFilter.ARTISTS -> LibraryArtistsScreen(
                 navController,
                 { filterType = LibraryFilter.LIBRARY },
+            )
+            LibraryFilter.LOCAL -> LocalMusicScreen(
+                navController = navController,
+                onBack = { filterType = LibraryFilter.LIBRARY },
             )
             LibraryFilter.PODCASTS -> LibraryPodcastsScreen(
                 navController,

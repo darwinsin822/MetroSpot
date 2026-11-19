@@ -113,6 +113,10 @@ fun NavGraphBuilder.navigationBuilder(
         HistoryScreen(navController)
     }
 
+    composable("local_music") {
+        com.metrospot.music.local.ui.LocalMusicScreen(navController)
+    }
+
     composable("spotify_migrate") {
         com.metrospot.music.ui.screens.spotify.SpotifyMigrateScreen(navController)
     }
