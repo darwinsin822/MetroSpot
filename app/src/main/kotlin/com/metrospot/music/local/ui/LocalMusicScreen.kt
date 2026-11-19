@@ -6,6 +6,8 @@
 package com.metrospot.music.local.ui
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -58,6 +60,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,6 +80,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -110,9 +114,9 @@ import com.metrospot.music.local.model.LocalAlbum
 import com.metrospot.music.local.model.LocalArtist
 import com.metrospot.music.local.model.LocalAudioTrack
 import com.metrospot.music.local.model.LocalFolder
+import com.metrospot.music.local.model.LocalSortOrder
 import com.metrospot.music.local.viewmodel.LocalMusicTab
 import com.metrospot.music.local.viewmodel.LocalMusicViewModel
-import com.metrospot.music.local.model.LocalSortOrder
 import com.metrospot.music.playback.queues.ListQueue
 import com.metrospot.music.ui.component.EmptyPlaceholder
 import com.metrospot.music.ui.component.NavigationTitle
@@ -279,7 +283,7 @@ fun LocalMusicScreen(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Sort menu (songs tab only)
+                // Sort menu (songs tab only, when not in detail view)
                 if (activeTab == LocalMusicTab.SONGS && selectedFolder == null &&
                     selectedAlbum == null && selectedArtist == null) {
                     var showSort by remember { mutableStateOf(false) }
@@ -354,6 +358,7 @@ fun LocalMusicScreen(
                 when {
                     folder != null -> FolderDetailView(
                         folder = folder,
+                        searchQuery = searchQuery,
                         nowPlayingId = nowPlayingId,
                         isPlaying = isPlaying,
                         onBack = { viewModel.selectFolder(null) },
@@ -362,8 +367,8 @@ fun LocalMusicScreen(
                                 ListQueue(title = folder.name, items = songs.map { it.toMediaItem() }, startIndex = index)
                             )
                         },
-                        onShuffle = {
-                            val shuffled = folder.tracks.shuffled()
+                        onShuffle = { tracksToShuffle ->
+                            val shuffled = tracksToShuffle.shuffled()
                             playerConnection?.playQueue(
                                 ListQueue(title = folder.name, items = shuffled.map { it.toMediaItem() }, startIndex = 0)
                             )
@@ -371,6 +376,7 @@ fun LocalMusicScreen(
                     )
                     album != null -> AlbumDetailView(
                         album = album,
+                        searchQuery = searchQuery,
                         nowPlayingId = nowPlayingId,
                         isPlaying = isPlaying,
                         onBack = { viewModel.selectAlbum(null) },
@@ -379,8 +385,8 @@ fun LocalMusicScreen(
                                 ListQueue(title = album.title, items = songs.map { it.toMediaItem() }, startIndex = index)
                             )
                         },
-                        onShuffle = {
-                            val shuffled = album.tracks.shuffled()
+                        onShuffle = { tracksToShuffle ->
+                            val shuffled = tracksToShuffle.shuffled()
                             playerConnection?.playQueue(
                                 ListQueue(title = album.title, items = shuffled.map { it.toMediaItem() }, startIndex = 0)
                             )
@@ -388,6 +394,7 @@ fun LocalMusicScreen(
                     )
                     artist != null -> ArtistDetailView(
                         artist = artist,
+                        searchQuery = searchQuery,
                         nowPlayingId = nowPlayingId,
                         isPlaying = isPlaying,
                         onBack = { viewModel.selectArtist(null) },
@@ -396,8 +403,8 @@ fun LocalMusicScreen(
                                 ListQueue(title = artist.name, items = songs.map { it.toMediaItem() }, startIndex = index)
                             )
                         },
-                        onShuffle = {
-                            val shuffled = artist.tracks.shuffled()
+                        onShuffle = { tracksToShuffle ->
+                            val shuffled = tracksToShuffle.shuffled()
                             playerConnection?.playQueue(
                                 ListQueue(title = artist.name, items = shuffled.map { it.toMediaItem() }, startIndex = 0)
                             )
@@ -413,15 +420,15 @@ fun LocalMusicScreen(
                         isPlaying = isPlaying,
                         onTabChange = { viewModel.setTab(it) },
                         onFolderClick = { viewModel.selectFolder(it) },
-                        onPlayFolder = { folder ->
+                        onPlayFolder = { fld ->
                             playerConnection?.playQueue(
-                                ListQueue(title = folder.name, items = folder.tracks.map { it.toMediaItem() }, startIndex = 0)
+                                ListQueue(title = fld.name, items = fld.tracks.map { it.toMediaItem() }, startIndex = 0)
                             )
                         },
                         onArtistClick = { viewModel.selectArtist(it) },
-                        onPlayArtist = { artist ->
+                        onPlayArtist = { art ->
                             playerConnection?.playQueue(
-                                ListQueue(title = artist.name, items = artist.tracks.map { it.toMediaItem() }, startIndex = 0)
+                                ListQueue(title = art.name, items = art.tracks.map { it.toMediaItem() }, startIndex = 0)
                             )
                         },
                         onAlbumClick = { viewModel.selectAlbum(it) },
@@ -847,7 +854,7 @@ private fun AlbumsTabContent(
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Songs list (reused in tabs + detail views)
+// Songs list (reused in tabs + detail views) with context menu & details dialog
 // ──────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -858,9 +865,18 @@ private fun SongsTabContent(
     onPlaySong: (Int, List<LocalAudioTrack>) -> Unit,
     onShuffleSongs: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
+    val playerConnection = LocalPlayerConnection.current
+
     if (tracks.isEmpty()) {
         EmptyPlaceholder(icon = R.drawable.music_note, text = stringResource(R.string.local_music_empty))
         return
+    }
+
+    var trackForDetails by remember { mutableStateOf<LocalAudioTrack?>(null) }
+
+    trackForDetails?.let { tr ->
+        TrackDetailsDialog(track = tr, onDismiss = { trackForDetails = null })
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -959,8 +975,97 @@ private fun SongsTabContent(
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isCurrentTrack) MaterialTheme.colorScheme.primary
                                 else MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(start = 8.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp)
                     )
+
+                    // 3-dots action menu
+                    var showTrackMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(
+                            onClick = { showTrackMenu = true },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.more_vert),
+                                contentDescription = stringResource(R.string.details),
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showTrackMenu,
+                            onDismissRequest = { showTrackMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.play_next)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.playlist_play),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    showTrackMenu = false
+                                    playerConnection?.playNext(track.toMediaItem())
+                                    Toast.makeText(context, context.getString(R.string.play_next), Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.add_to_queue)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.playlist_add),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    showTrackMenu = false
+                                    playerConnection?.addToQueue(track.toMediaItem())
+                                    Toast.makeText(context, context.getString(R.string.add_to_queue), Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.share),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    showTrackMenu = false
+                                    try {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "audio/*"
+                                            putExtra(Intent.EXTRA_STREAM, Uri.parse(track.contentUriString))
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, track.title))
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, e.message ?: "Error", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.details)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.info),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    showTrackMenu = false
+                                    trackForDetails = track
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1000,6 +1105,61 @@ private fun SongsTabContent(
                 }
             }
         }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Track Details Dialog
+// ──────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun TrackDetailsDialog(
+    track: LocalAudioTrack,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        title = {
+            Text(
+                text = stringResource(R.string.details),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DetailItemRow(label = stringResource(R.string.local_sort_title_asc), value = track.title)
+                DetailItemRow(label = stringResource(R.string.local_sort_artist), value = track.artist)
+                DetailItemRow(label = stringResource(R.string.local_albums), value = track.album)
+                DetailItemRow(label = stringResource(R.string.local_folders), value = track.folderName)
+                DetailItemRow(label = stringResource(R.string.local_sort_duration), value = makeTimeString(track.durationMs))
+                DetailItemRow(label = "Ruta", value = track.path)
+            }
+        }
+    )
+}
+
+@Composable
+private fun DetailItemRow(label: String, value: String) {
+    Column {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -1147,23 +1307,32 @@ private fun DetailHeader(
 @Composable
 private fun FolderDetailView(
     folder: LocalFolder,
+    searchQuery: String,
     nowPlayingId: String?,
     isPlaying: Boolean,
     onBack: () -> Unit,
     onPlaySong: (Int, List<LocalAudioTrack>) -> Unit,
-    onShuffle: () -> Unit,
+    onShuffle: (List<LocalAudioTrack>) -> Unit,
 ) {
+    val displayedTracks = remember(folder.tracks, searchQuery) {
+        if (searchQuery.isBlank()) folder.tracks
+        else folder.tracks.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
+            it.artist.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         DetailHeader(
             title = folder.name,
-            subtitle = stringResource(R.string.local_track_count, folder.trackCount),
+            subtitle = stringResource(R.string.local_track_count, displayedTracks.size),
             heroContent = null,
             onBack = onBack,
-            onPlayAll = { onPlaySong(0, folder.tracks) },
-            onShuffle = onShuffle
+            onPlayAll = { if (displayedTracks.isNotEmpty()) onPlaySong(0, displayedTracks) },
+            onShuffle = { if (displayedTracks.isNotEmpty()) onShuffle(displayedTracks) }
         )
         SongsTabContent(
-            tracks = folder.tracks,
+            tracks = displayedTracks,
             nowPlayingId = nowPlayingId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -1175,17 +1344,26 @@ private fun FolderDetailView(
 @Composable
 private fun AlbumDetailView(
     album: LocalAlbum,
+    searchQuery: String,
     nowPlayingId: String?,
     isPlaying: Boolean,
     onBack: () -> Unit,
     onPlaySong: (Int, List<LocalAudioTrack>) -> Unit,
-    onShuffle: () -> Unit,
+    onShuffle: (List<LocalAudioTrack>) -> Unit,
 ) {
     val fallbackColor = remember(album.title) { accentColorFromString(album.title) }
+    val displayedTracks = remember(album.tracks, searchQuery) {
+        if (searchQuery.isBlank()) album.tracks
+        else album.tracks.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
+            it.artist.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         DetailHeader(
             title = album.title,
-            subtitle = stringResource(R.string.local_album_meta, album.artist, album.trackCount),
+            subtitle = stringResource(R.string.local_album_meta, album.artist, displayedTracks.size),
             heroContent = {
                 if (!album.albumArtUri.isNullOrBlank()) {
                     AsyncImage(
@@ -1218,11 +1396,11 @@ private fun AlbumDetailView(
                 }
             },
             onBack = onBack,
-            onPlayAll = { onPlaySong(0, album.tracks) },
-            onShuffle = onShuffle
+            onPlayAll = { if (displayedTracks.isNotEmpty()) onPlaySong(0, displayedTracks) },
+            onShuffle = { if (displayedTracks.isNotEmpty()) onShuffle(displayedTracks) }
         )
         SongsTabContent(
-            tracks = album.tracks,
+            tracks = displayedTracks,
             nowPlayingId = nowPlayingId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
@@ -1234,17 +1412,26 @@ private fun AlbumDetailView(
 @Composable
 private fun ArtistDetailView(
     artist: LocalArtist,
+    searchQuery: String,
     nowPlayingId: String?,
     isPlaying: Boolean,
     onBack: () -> Unit,
     onPlaySong: (Int, List<LocalAudioTrack>) -> Unit,
-    onShuffle: () -> Unit,
+    onShuffle: (List<LocalAudioTrack>) -> Unit,
 ) {
     val accent = remember(artist.name) { accentColorFromString(artist.name) }
+    val displayedTracks = remember(artist.tracks, searchQuery) {
+        if (searchQuery.isBlank()) artist.tracks
+        else artist.tracks.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
+            it.album.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         DetailHeader(
             title = artist.name,
-            subtitle = stringResource(R.string.local_artist_meta, artist.trackCount, artist.albums.size),
+            subtitle = stringResource(R.string.local_artist_meta, displayedTracks.size, artist.albums.size),
             heroContent = {
                 // Artist hero: gradient with large initial letter
                 Box(
@@ -1266,11 +1453,11 @@ private fun ArtistDetailView(
                 }
             },
             onBack = onBack,
-            onPlayAll = { onPlaySong(0, artist.tracks) },
-            onShuffle = onShuffle
+            onPlayAll = { if (displayedTracks.isNotEmpty()) onPlaySong(0, displayedTracks) },
+            onShuffle = { if (displayedTracks.isNotEmpty()) onShuffle(displayedTracks) }
         )
         SongsTabContent(
-            tracks = artist.tracks,
+            tracks = displayedTracks,
             nowPlayingId = nowPlayingId,
             isPlaying = isPlaying,
             onPlaySong = onPlaySong,
